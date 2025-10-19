@@ -12,7 +12,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    setWindowTitle('Calculator');
+    setWindowTitle('Vaxmanager');
     const fixedSize = Size(732, 935); 
     setWindowMinSize(fixedSize);
     setWindowMaxSize(fixedSize);
