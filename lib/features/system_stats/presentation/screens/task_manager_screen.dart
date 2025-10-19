@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:taskmanager/core/constants/app_colors.dart';
@@ -6,6 +7,7 @@ import 'package:taskmanager/core/constants/app_strings.dart';
 
 import '../cubit/system_stats_cubit.dart';
 import '../widgets/stats_card.dart';
+import '../widgets/process_action_sheet.dart';
 
 class TaskManagerScreen extends StatelessWidget {
   const TaskManagerScreen({super.key});
@@ -160,49 +162,142 @@ class TaskManagerScreen extends StatelessWidget {
                       itemCount: state.processes.length,
                       itemBuilder: (context, index) {
                         final process = state.processes[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardBackground,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  process.name,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
+                        return GestureDetector(
+                          onLongPress: () {
+                            showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => ProcessActionSheet(
+                                onKill: () async {
+                                  Navigator.pop(context);
+                                  try {
+                                    final result = await Process.run('kill', ['-9', process.pid.toString()]);
+                                    if (result.exitCode == 0) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Process ${process.pid} killed.')),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Failed to kill process: ${result.stderr}')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')),
+                                    );
+                                  }
+                                },
+                                onShowLog: () async {
+                                  Navigator.pop(context);
+                                  // Try to show /proc/[pid]/fd/1 (stdout) and /proc/[pid]/fd/2 (stderr)
+                                  String log = '';
+                                  try {
+                                    final stdoutFile = File('/proc/${process.pid}/fd/1');
+                                    final stderrFile = File('/proc/${process.pid}/fd/2');
+                                    if (await stdoutFile.exists()) {
+                                      log += '--- STDOUT ---\n';
+                                      log += await stdoutFile.readAsString();
+                                    }
+                                    if (await stderrFile.exists()) {
+                                      log += '\n--- STDERR ---\n';
+                                      log += await stderrFile.readAsString();
+                                    }
+                                    if (log.isEmpty) log = 'No log available for this process.';
+                                  } catch (e) {
+                                    log = 'Could not read log: $e';
+                                  }
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('Process ${process.pid} Log'),
+                                      content: SingleChildScrollView(child: Text(log, style: const TextStyle(fontSize: 12))),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Close'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                onRestart: () async {
+                                  Navigator.pop(context);
+                                  try {
+                                    // Get the command line of the process
+                                    final cmdFile = File('/proc/${process.pid}/cmdline');
+                                    if (await cmdFile.exists()) {
+                                      final cmdline = await cmdFile.readAsString();
+                                      final args = cmdline.split('\u0000').where((s) => s.isNotEmpty).toList();
+                                      if (args.isNotEmpty) {
+                                        await Process.run('kill', ['-9', process.pid.toString()]);
+                                        await Future.delayed(const Duration(milliseconds: 300));
+                                        await Process.start(args[0], args.sublist(1));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Process ${process.pid} restarted.')),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Could not parse command line for restart.')),
+                                        );
+                                      }
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('No command line found for process.')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBackground,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    process.name,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  process.pid.toString(),
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
+                                Expanded(
+                                  child: Text(
+                                    process.pid.toString(),
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '${process.cpuUsage.toStringAsFixed(1)}%',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
+                                Expanded(
+                                  child: Text(
+                                    '${process.cpuUsage.toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '${process.memoryUsage.toStringAsFixed(1)}%',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
+                                Expanded(
+                                  child: Text(
+                                    '${process.memoryUsage.toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },
