@@ -173,36 +173,73 @@ class SystemStatsRepository {
 
   Future<List<ProcessInfo>> getProcesses() async {
     try {
-      // ps aux output: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
-      final result = await _shell.run('ps aux --sort=-%cpu');
+      // Use ps -eo pid,pcpu,pmem,comm for robust parsing
+      final result = await _shell.run('ps -eo pid,pcpu,pmem,comm --sort=-pcpu');
       final lines = result.outLines.toList();
       if (lines.isEmpty) return [];
       lines.removeAt(0); // Remove header
 
-      return lines.where((line) => line.trim().isNotEmpty).map((line) {
+      List<ProcessInfo> processes = [];
+      for (final line in lines) {
         final parts = line.trim().split(RegExp(r'\s+'));
-        if (parts.length < 11) {
-          return ProcessInfo(
+        if (parts.length < 4) {
+          processes.add(ProcessInfo(
             name: 'Unknown',
             pid: 0,
             cpuUsage: 0.0,
             memoryUsage: 0.0,
             ramMb: 0.0,
-          );
+          ));
+          continue;
         }
-        // RSS is resident set size in KB, index 5
+        final pid = int.tryParse(parts[0]) ?? 0;
         double ramMb = 0.0;
-        if (parts.length > 5) {
-          ramMb = (double.tryParse(parts[5]) ?? 0.0) / 1024;
+        // Try to use PSS from /proc/[pid]/smaps for real memory usage
+        bool usedPss = false;
+        try {
+          final smapsFile = File('/proc/$pid/smaps');
+          if (await smapsFile.exists()) {
+            final smapsLines = await smapsFile.readAsLines();
+            int pssKb = 0;
+            for (final sLine in smapsLines) {
+              if (sLine.startsWith('Pss:')) {
+                final kb = int.tryParse(sLine.split(RegExp(r'\s+'))[1]) ?? 0;
+                pssKb += kb;
+              }
+            }
+            if (pssKb > 0) {
+              ramMb = pssKb / 1024;
+              usedPss = true;
+            }
+          }
+        } catch (_) {}
+        // Fallback to VmRSS if PSS is not available
+        if (!usedPss) {
+          try {
+            final statusFile = File('/proc/$pid/status');
+            if (await statusFile.exists()) {
+              final statusLines = await statusFile.readAsLines();
+              for (final sLine in statusLines) {
+                if (sLine.startsWith('VmRSS:')) {
+                  final kb = int.tryParse(sLine.split(RegExp(r'\s+'))[1]) ?? 0;
+                  ramMb = kb / 1024;
+                  break;
+                }
+              }
+            }
+          } catch (_) {
+            ramMb = 0.0;
+          }
         }
-        return ProcessInfo(
-          name: parts[10],
-          pid: int.parse(parts[1]),
-          cpuUsage: double.tryParse(parts[2]) ?? 0.0,
-          memoryUsage: double.tryParse(parts[3]) ?? 0.0,
+        processes.add(ProcessInfo(
+          name: parts.sublist(3).join(' '),
+          pid: pid,
+          cpuUsage: double.tryParse(parts[1]) ?? 0.0,
+          memoryUsage: double.tryParse(parts[2]) ?? 0.0,
           ramMb: ramMb,
-        );
-      }).toList();
+        ));
+      }
+      return processes;
     } catch (e) {
       throw Exception('Failed to get processes: $e');
     }
