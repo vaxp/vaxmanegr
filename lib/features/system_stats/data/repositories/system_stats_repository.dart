@@ -194,27 +194,27 @@ class SystemStatsRepository {
         }
         final pid = int.tryParse(parts[0]) ?? 0;
         double ramMb = 0.0;
-        // Try to use PSS from /proc/[pid]/smaps for real memory usage
-        bool usedPss = false;
+        // Sum Private_Clean and Private_Dirty from /proc/[pid]/smaps for true private memory
+        bool usedPrivate = false;
         try {
           final smapsFile = File('/proc/$pid/smaps');
           if (await smapsFile.exists()) {
             final smapsLines = await smapsFile.readAsLines();
-            int pssKb = 0;
+            int privateKb = 0;
             for (final sLine in smapsLines) {
-              if (sLine.startsWith('Pss:')) {
+              if (sLine.startsWith('Private_Clean:') || sLine.startsWith('Private_Dirty:')) {
                 final kb = int.tryParse(sLine.split(RegExp(r'\s+'))[1]) ?? 0;
-                pssKb += kb;
+                privateKb += kb;
               }
             }
-            if (pssKb > 0) {
-              ramMb = pssKb / 1024;
-              usedPss = true;
+            if (privateKb > 0) {
+              ramMb = privateKb / 1024;
+              usedPrivate = true;
             }
           }
         } catch (_) {}
-        // Fallback to VmRSS if PSS is not available
-        if (!usedPss) {
+        // Fallback to VmRSS if private is not available
+        if (!usedPrivate) {
           try {
             final statusFile = File('/proc/$pid/status');
             if (await statusFile.exists()) {
