@@ -23,11 +23,13 @@ class ProcessInfo {
   final int pid;
   final double cpuUsage;
   final double memoryUsage;
+  final double ramMb;
 
   ProcessInfo({
     required this.name,
     required this.pid,
     required this.cpuUsage,
     required this.memoryUsage,
+    required this.ramMb,
   });
 }

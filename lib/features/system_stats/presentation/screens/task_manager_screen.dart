@@ -284,6 +284,15 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                     ),
                                   ),
                                 ),
+                                Expanded(
+                                  child: Text(
+                                    '${process.ramMb.toStringAsFixed(1)} MB',
+                                    style: TextStyle(
+                                      color: AppColors.ramColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),

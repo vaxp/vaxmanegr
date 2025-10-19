@@ -173,12 +173,12 @@ class SystemStatsRepository {
 
   Future<List<ProcessInfo>> getProcesses() async {
     try {
+      // ps aux output: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
       final result = await _shell.run('ps aux --sort=-%cpu');
-      final lines = result.outLines.toList(); // Ensure lines is a List
-      
+      final lines = result.outLines.toList();
       if (lines.isEmpty) return [];
-      lines.removeAt(0); // Remove header after converting to List
-      
+      lines.removeAt(0); // Remove header
+
       return lines.where((line) => line.trim().isNotEmpty).map((line) {
         final parts = line.trim().split(RegExp(r'\s+'));
         if (parts.length < 11) {
@@ -187,13 +187,20 @@ class SystemStatsRepository {
             pid: 0,
             cpuUsage: 0.0,
             memoryUsage: 0.0,
+            ramMb: 0.0,
           );
+        }
+        // RSS is resident set size in KB, index 5
+        double ramMb = 0.0;
+        if (parts.length > 5) {
+          ramMb = (double.tryParse(parts[5]) ?? 0.0) / 1024;
         }
         return ProcessInfo(
           name: parts[10],
           pid: int.parse(parts[1]),
           cpuUsage: double.tryParse(parts[2]) ?? 0.0,
           memoryUsage: double.tryParse(parts[3]) ?? 0.0,
+          ramMb: ramMb,
         );
       }).toList();
     } catch (e) {
