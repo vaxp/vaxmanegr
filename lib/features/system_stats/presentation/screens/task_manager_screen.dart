@@ -9,8 +9,15 @@ import '../cubit/system_stats_cubit.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/process_action_sheet.dart';
 
-class TaskManagerScreen extends StatelessWidget {
+class TaskManagerScreen extends StatefulWidget {
   const TaskManagerScreen({super.key});
+
+  @override
+  _TaskManagerScreenState createState() => _TaskManagerScreenState();
+}
+
+class _TaskManagerScreenState extends State<TaskManagerScreen> {
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +29,43 @@ class TaskManagerScreen extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(
-                AppStrings.appTitle,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppStrings.appTitle,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Container(
+                    width: 250,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      style: TextStyle(color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: AppStrings.search,
+                        hintStyle: TextStyle(color: AppColors.textSecondary),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value.trim();
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             // Stats Grid
@@ -157,11 +194,14 @@ class TaskManagerScreen extends StatelessWidget {
               child: BlocBuilder<SystemStatsCubit, SystemStatsState>(
                 builder: (context, state) {
                   if (state is SystemStatsLoaded) {
+                    final filtered = _searchQuery.isEmpty
+                        ? state.processes
+                        : state.processes.where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: state.processes.length,
+                      itemCount: filtered.length,
                       itemBuilder: (context, index) {
-                        final process = state.processes[index];
+                        final process = filtered[index];
                         return GestureDetector(
                           onLongPress: () {
                             showModalBottomSheet(
