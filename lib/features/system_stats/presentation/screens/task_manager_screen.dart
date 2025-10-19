@@ -89,7 +89,7 @@ class TaskManagerScreen extends StatelessWidget {
                         StatsCard(
                           title: AppStrings.network,
                           value: '',
-                          unit: AppStrings.megabytesPerSec,
+                          unit: AppStrings.networkPerSec,
                           color: AppColors.networkColor,
                           icon: CupertinoIcons.wifi,
                           child: BlocBuilder<SystemStatsCubit, SystemStatsState>(

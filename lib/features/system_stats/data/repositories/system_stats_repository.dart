@@ -102,27 +102,45 @@ class SystemStatsRepository {
     }
   }
 
+  Map<String, int>? _lastNetworkBytes;
+  DateTime? _lastNetworkTime;
+
   Future<Map<String, double>> _getNetworkStats() async {
     try {
       final netFile = File('/proc/net/dev');
       final netLines = await netFile.readAsLines();
-      double networkDownload = 0.0;
-      double networkUpload = 0.0;
+      int totalRx = 0;
+      int totalTx = 0;
 
       for (final line in netLines.skip(2)) {
         final parts = line.trim().split(RegExp(r'\s+'));
-        // Interface name is before the colon
         if (parts.isEmpty) continue;
         final iface = parts[0].replaceAll(':', '');
-        if (iface == 'lo' || iface.isEmpty) continue; // skip loopback and empty
-        // RX bytes = parts[1], TX bytes = parts[9]
-        networkDownload += (int.tryParse(parts[1]) ?? 0) / (1024 * 1024); // MB
-        networkUpload += (int.tryParse(parts[9]) ?? 0) / (1024 * 1024); // MB
+        if (iface == 'lo' || iface.isEmpty) continue;
+        totalRx += int.tryParse(parts[1]) ?? 0;
+        totalTx += int.tryParse(parts[9]) ?? 0;
       }
 
+      final now = DateTime.now();
+      double downloadKbps = 0.0;
+      double uploadKbps = 0.0;
+
+      if (_lastNetworkBytes != null && _lastNetworkTime != null) {
+        final elapsed = now.difference(_lastNetworkTime!).inMilliseconds;
+        if (elapsed > 0) {
+          final rxDiff = totalRx - (_lastNetworkBytes!['rx'] ?? 0);
+          final txDiff = totalTx - (_lastNetworkBytes!['tx'] ?? 0);
+          downloadKbps = rxDiff / (elapsed / 1000) / 1024; // KB/s
+          uploadKbps = txDiff / (elapsed / 1000) / 1024;   // KB/s
+        }
+      }
+
+      _lastNetworkBytes = {'rx': totalRx, 'tx': totalTx};
+      _lastNetworkTime = now;
+
       return {
-        'upload': networkUpload,
-        'download': networkDownload,
+        'upload': uploadKbps,
+        'download': downloadKbps,
       };
     } catch (e) {
       return {

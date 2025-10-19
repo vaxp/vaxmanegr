@@ -22,6 +22,7 @@ class AppStrings {
   static const String percentage = '%';
   static const String megabytes = 'MB';
   static const String megabytesPerSec = 'MB/s';
+  static const String networkPerSec = 'KB/s';
   
   // Messages
   static const String loading = 'Loading...';
