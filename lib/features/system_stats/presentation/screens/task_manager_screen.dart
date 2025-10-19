@@ -13,6 +13,7 @@ class TaskManagerScreen extends StatefulWidget {
   const TaskManagerScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _TaskManagerScreenState createState() => _TaskManagerScreenState();
 }
 
@@ -138,7 +139,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                   '${state.stats.networkDownload.toStringAsFixed(1)}/${state.stats.networkUpload.toStringAsFixed(1)}',
                                   style: TextStyle(
                                     color: AppColors.textPrimary,
-                                    fontSize: 20,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 );
@@ -211,6 +212,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                 onKill: () async {
                                   Navigator.pop(context);
                                   final msg = await ProcessActions.killProcess(process.pid);
+                                  // ignore: use_build_context_synchronously
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(msg)),
                                   );
@@ -219,6 +221,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                   Navigator.pop(context);
                                   final log = await ProcessActions.showProcessLog(process.pid);
                                   showDialog(
+                                    // ignore: use_build_context_synchronously
                                     context: context,
                                     builder: (context) => AlertDialog(
                                       title: Text('Process ${process.pid} Log'),
@@ -235,6 +238,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                 onRestart: () async {
                                   Navigator.pop(context);
                                   final msg = await ProcessActions.restartProcess(process.pid);
+                                  // ignore: use_build_context_synchronously
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(msg)),
                                   );
@@ -288,7 +292,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                   child: Text(
                                     '${process.ramMb.toStringAsFixed(1)} MB',
                                     style: TextStyle(
-                                      color: AppColors.ramColor,
+                                      color: AppColors.networkColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
