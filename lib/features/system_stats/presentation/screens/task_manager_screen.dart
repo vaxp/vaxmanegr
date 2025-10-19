@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'package:taskmanager/features/system_stats/data/process_actions.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:taskmanager/core/constants/app_colors.dart';
@@ -170,42 +170,14 @@ class TaskManagerScreen extends StatelessWidget {
                               builder: (context) => ProcessActionSheet(
                                 onKill: () async {
                                   Navigator.pop(context);
-                                  try {
-                                    final result = await Process.run('kill', ['-9', process.pid.toString()]);
-                                    if (result.exitCode == 0) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Process ${process.pid} killed.')),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Failed to kill process: ${result.stderr}')),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
-                                    );
-                                  }
+                                  final msg = await ProcessActions.killProcess(process.pid);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(msg)),
+                                  );
                                 },
                                 onShowLog: () async {
                                   Navigator.pop(context);
-                                  // Try to show /proc/[pid]/fd/1 (stdout) and /proc/[pid]/fd/2 (stderr)
-                                  String log = '';
-                                  try {
-                                    final stdoutFile = File('/proc/${process.pid}/fd/1');
-                                    final stderrFile = File('/proc/${process.pid}/fd/2');
-                                    if (await stdoutFile.exists()) {
-                                      log += '--- STDOUT ---\n';
-                                      log += await stdoutFile.readAsString();
-                                    }
-                                    if (await stderrFile.exists()) {
-                                      log += '\n--- STDERR ---\n';
-                                      log += await stderrFile.readAsString();
-                                    }
-                                    if (log.isEmpty) log = 'No log available for this process.';
-                                  } catch (e) {
-                                    log = 'Could not read log: $e';
-                                  }
+                                  final log = await ProcessActions.showProcessLog(process.pid);
                                   showDialog(
                                     context: context,
                                     builder: (context) => AlertDialog(
@@ -222,34 +194,10 @@ class TaskManagerScreen extends StatelessWidget {
                                 },
                                 onRestart: () async {
                                   Navigator.pop(context);
-                                  try {
-                                    // Get the command line of the process
-                                    final cmdFile = File('/proc/${process.pid}/cmdline');
-                                    if (await cmdFile.exists()) {
-                                      final cmdline = await cmdFile.readAsString();
-                                      final args = cmdline.split('\u0000').where((s) => s.isNotEmpty).toList();
-                                      if (args.isNotEmpty) {
-                                        await Process.run('kill', ['-9', process.pid.toString()]);
-                                        await Future.delayed(const Duration(milliseconds: 300));
-                                        await Process.start(args[0], args.sublist(1));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Process ${process.pid} restarted.')),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Could not parse command line for restart.')),
-                                        );
-                                      }
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('No command line found for process.')),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
-                                    );
-                                  }
+                                  final msg = await ProcessActions.restartProcess(process.pid);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(msg)),
+                                  );
                                 },
                               ),
                             );
