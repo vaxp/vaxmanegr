@@ -108,15 +108,18 @@ class SystemStatsRepository {
       final netLines = await netFile.readAsLines();
       double networkDownload = 0.0;
       double networkUpload = 0.0;
-      
+
       for (final line in netLines.skip(2)) {
         final parts = line.trim().split(RegExp(r'\s+'));
-        if (parts[0].contains('eth0') || parts[0].contains('wlan0')) {
-          networkDownload += (int.tryParse(parts[1]) ?? 0) / (1024 * 1024); // Convert to MB
-          networkUpload += (int.tryParse(parts[9]) ?? 0) / (1024 * 1024);
-        }
+        // Interface name is before the colon
+        if (parts.isEmpty) continue;
+        final iface = parts[0].replaceAll(':', '');
+        if (iface == 'lo' || iface.isEmpty) continue; // skip loopback and empty
+        // RX bytes = parts[1], TX bytes = parts[9]
+        networkDownload += (int.tryParse(parts[1]) ?? 0) / (1024 * 1024); // MB
+        networkUpload += (int.tryParse(parts[9]) ?? 0) / (1024 * 1024); // MB
       }
-      
+
       return {
         'upload': networkUpload,
         'download': networkDownload,
