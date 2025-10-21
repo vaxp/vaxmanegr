@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:taskmanager/features/system_stats/data/process_actions.dart';
+import 'package:vaxmanegr/features/system_stats/data/process_actions.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:taskmanager/core/constants/app_colors.dart';
-import 'package:taskmanager/core/constants/app_strings.dart';
+import 'package:vaxmanegr/core/constants/app_colors.dart';
+import 'package:vaxmanegr/core/constants/app_strings.dart';
 
 import '../cubit/system_stats_cubit.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/process_action_sheet.dart';
 
-class TaskManagerScreen extends StatefulWidget {
-  const TaskManagerScreen({super.key});
+class vaxmanegrScreen extends StatefulWidget {
+  const vaxmanegrScreen({super.key});
 
   @override
   // ignore: library_private_types_in_public_api
-  _TaskManagerScreenState createState() => _TaskManagerScreenState();
+  _vaxmanegrScreenState createState() => _vaxmanegrScreenState();
 }
 
-class _TaskManagerScreenState extends State<TaskManagerScreen> {
+class _vaxmanegrScreenState extends State<vaxmanegrScreen> {
   String _searchQuery = '';
 
   @override

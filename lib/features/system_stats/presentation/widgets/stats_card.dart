@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskmanager/core/constants/app_colors.dart';
+import 'package:vaxmanegr/core/constants/app_colors.dart';
 import 'glass_card.dart';
 
 class StatsCard extends StatelessWidget {

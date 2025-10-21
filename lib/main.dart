@@ -12,7 +12,7 @@ void main() {
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     setWindowTitle('Vaxmanager');
-    const fixedSize = Size(732, 935); 
+    const fixedSize = Size(655, 920); 
     setWindowMinSize(fixedSize);
     setWindowMaxSize(fixedSize);
   }
@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
       ),
       home: BlocProvider(
         create: (context) => SystemStatsCubit(SystemStatsRepository()),
-        child: const TaskManagerScreen(),
+        child: const vaxmanegrScreen(),
       ),
     );
   }
