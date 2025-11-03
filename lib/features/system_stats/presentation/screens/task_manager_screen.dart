@@ -23,7 +23,7 @@ class _vaxmanegrScreenState extends State<vaxmanegrScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color.fromARGB(169, 28, 28, 30),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,7 +47,7 @@ class _vaxmanegrScreenState extends State<vaxmanegrScreen> {
                     width: 250,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
+                      color: const Color.fromARGB(172, 44, 44, 46),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
@@ -250,7 +250,7 @@ class _vaxmanegrScreenState extends State<vaxmanegrScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.cardBackground,
+                              color: const Color.fromARGB(171, 44, 44, 46),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
